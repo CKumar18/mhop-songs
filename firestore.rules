@@ -1,0 +1,51 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // Shared church song library:
+    // Community members can read published songs; only authorized admins can read drafts or write songs.
+    match /songs/{songId} {
+      allow read: if resource.data.isPublished == true || isAdmin();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Categories and tags metadata
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Document import history: strictly admin-only
+    match /import_history/{importId} {
+      allow read, write: if isAdmin();
+    }
+
+    // User profile & role records:
+    // Users may read their own profile and update non-role fields,
+    // but may NEVER grant or elevate their own role to 'admin'.
+    match /users/{uid} {
+      allow read: if isSignedIn() && (request.auth.uid == uid || isAdmin());
+      allow create: if isSignedIn()
+        && request.auth.uid == uid
+        && (!('role' in request.resource.data) || request.resource.data.role == 'member');
+      allow update: if isSignedIn()
+        && (
+          (request.auth.uid == uid
+            && request.resource.data.role == resource.data.role)
+          || isAdmin()
+        );
+      allow delete: if isAdmin();
+    }
+  }
+}

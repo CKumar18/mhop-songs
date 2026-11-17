@@ -1,0 +1,6 @@
+{
+  "name": "MHOP Songs",
+  "description": "Multilingual Christian songbook for Telugu, Hindi, and English worship songs with lyrics, chords, reading customization, and DOCX/PDF song import.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
